@@ -5,10 +5,9 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class DynamicCompiler {
 
@@ -56,5 +55,19 @@ public class DynamicCompiler {
 
         return cl.loadAll();
     }
-
+    
+    public synchronized Object eval(String source) throws CompilerException {
+        
+        Map<String, String> sources = new HashMap<String, String>(1);
+        sources.put("Dummy", "public class Dummy { public static Object eval() { return " + source + "; } }");
+        
+        Class<?> dummyClass = compile(sources).get("Dummy");
+        try {
+            Method m = dummyClass.getDeclaredMethod("eval");
+            return m.invoke(null);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
