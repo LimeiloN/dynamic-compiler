@@ -4,14 +4,12 @@ import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
-import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 public class FileManager extends ForwardingJavaFileManager<JavaFileManager> {
 
     private DynamicClassLoader classLoader;
-    private Map<String, SourceObject> sources;
+    //private Map<String, SourceObject> sources;
 
     /**
      * Creates a new instance of ForwardingJavaFileManager.
@@ -25,12 +23,14 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager> {
         this.classLoader = cloader;
     }
 
+    /*
     @Override
     public JavaFileObject getFileForInput(Location location, String packageName, String relativeName) {
 
         System.out.println("[FileManager::getFileForInput] " + location + "; " + packageName + "; " + relativeName);
         return sources.get(packageName.replace("\\.", File.pathSeparator) + relativeName);
     }
+    */
 
     @Override
     public JavaFileObject getJavaFileForOutput(Location location, String qname, JavaFileObject.Kind kind, FileObject outputFile) throws IOException {

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,13 +21,10 @@ public class DynamicCompilerTest {
                           "    }" +
                           "}";
 
-        Map<String, String> sources = new HashMap<>(1);
-        sources.put("somepackage.SomeClass", someCode);
-
         try {
 
             DynamicCompiler compiler = new DynamicCompiler();
-            Map<String, Class<?>> compiled = compiler.compile(sources);
+            Map<String, Class<?>> compiled = compiler.compile(Collections.singletonMap("somepackage.SomeClass", someCode));
             Class<?> someClass = compiled.get("somepackage.SomeClass");
 
             Method m = someClass.getDeclaredMethod("run");
@@ -34,12 +32,12 @@ public class DynamicCompilerTest {
 
             // So much exceptions to handle ... rip
         } catch (CompilerException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+            Assertions.fail(e);
         }
     }
 
     @Test
-    public void testMultipleFiles() {
+    public void testMultipleSources() {
 
         String someCode1name = "somepackage.SomeClass";
         String someCode1 = "package somepackage;" +
@@ -70,7 +68,7 @@ public class DynamicCompilerTest {
 
             // So much exceptions to handle ... rip
         } catch (CompilerException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+            Assertions.fail(e);
         }
     }
 
@@ -85,16 +83,97 @@ public class DynamicCompilerTest {
                           "    }" +
                           "}";
 
-        Map<String, String> sources = new HashMap<>(1);
-        sources.put("somepackage.SomeClass", someCode);
+        try {
+            DynamicCompiler compiler = new DynamicCompiler();
+
+            Assertions.assertThrows(CompilerException.class, () -> compiler.compile(Collections.singletonMap("somepackage.SomeClass", someCode)));
+
+        } catch (CompilerException e) {
+            Assertions.fail(e);
+        }
+    }
+
+    @Test
+    public void testSimpleEval() {
+
+        String source = "2 + 2";
 
         try {
             DynamicCompiler compiler = new DynamicCompiler();
 
-            Assertions.assertThrows(CompilerException.class, () -> compiler.compile(sources));
+            Assertions.assertEquals(compiler.eval(source), 4);
+        } catch (CompilerException | InvocationTargetException e) {
+            Assertions.fail(e);
+        }
+    }
 
+    @Test
+    public void testComplexEval() {
+
+        String source = "3 * x + b";
+
+        try {
+            DynamicCompiler compiler = new DynamicCompiler();
+
+            Assertions.assertEquals((double) (3 * 2 + 2),
+                                    compiler.eval(source, new EvalContext<>(Double.class)
+                                        .addParameter("x", Double.class)
+                                        .addParameter("b", Double.class), 2.0, 2.0));
+        } catch (CompilerException | InvocationTargetException e) {
+            Assertions.fail(e);
+        }
+    }
+
+    @Test
+    public void testCompilerception() {
+
+        String source = "import com.limelion.dyncompiler.*;" +
+                        "import java.lang.reflect.InvocationTargetException;" +
+                        "public class MyClass {" +
+                        "public static void run() {" +
+                        "    try {" +
+                        "        DynamicCompiler compiler = new DynamicCompiler();" +
+                        "        assert (Boolean) compiler.eval(\"1 == 1\");" +
+                        "    } catch (CompilerException | InvocationTargetException e) {" +
+                        "        e.printStackTrace();" +
+                        "    }" +
+                        "}}";
+
+        try {
+            DynamicCompiler compiler = new DynamicCompiler();
+            compiler.compileAndRun("MyClass", "run", source);
+        } catch (CompilerException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            Assertions.fail(e);
+        }
+    }
+
+    @Test
+    public void testRun() {
+
+        String source = "assert 1 == 0;";
+
+        try {
+            DynamicCompiler compiler = new DynamicCompiler();
+            Assertions.assertThrows(InvocationTargetException.class, () -> compiler.run(source));
         } catch (CompilerException e) {
-            e.printStackTrace();
+            Assertions.fail(e);
+        }
+    }
+
+    @Test
+    public void testMultipleEval() {
+
+        String source = "\"Why the fuck I would do this ?\"";
+
+        try {
+            DynamicCompiler compiler = new DynamicCompiler();
+            String s1 = (String) compiler.eval(source);
+            String s2 = (String) compiler.eval(source);
+            String s3 = (String) compiler.eval(source);
+            Assertions.assertEquals(s1, s2);
+            Assertions.assertEquals(s1, s3);
+        } catch (CompilerException | InvocationTargetException e) {
+            Assertions.fail(e);
         }
     }
 

@@ -4,10 +4,9 @@ import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 public class DynamicCompiler {
 
@@ -55,19 +54,75 @@ public class DynamicCompiler {
 
         return cl.loadAll();
     }
-    
-    public synchronized Object eval(String source) throws CompilerException {
-        
-        Map<String, String> sources = new HashMap<String, String>(1);
-        sources.put("Dummy", "public class Dummy { public static Object eval() { return " + source + "; } }");
-        
-        Class<?> dummyClass = compile(sources).get("Dummy");
+
+    public Class<?> compile(String qname, String source) throws CompilerException {
+
+        return compile(Collections.singletonMap(qname, source)).get(qname);
+    }
+
+    public <T> T eval(String source, EvalContext<T> ctx, Object... params) throws CompilerException, InvocationTargetException {
+
+        StringBuilder dummy = new StringBuilder();
+
+        for (Class<?> c : ctx.getImports()) {
+            dummy.append("import ").append(c.getCanonicalName()).append(";");
+        }
+
+        dummy.append("public class Dummy { public static ").append(ctx.getReturnType().getCanonicalName()).append(" eval(");
+
+        int cnt = 1;
+        for (Map.Entry e : ctx.getParameters().entrySet()) {
+            dummy.append(((Class<?>) e.getValue()).getCanonicalName()).append(" ").append(e.getKey());
+            if (cnt != ctx.getParameters().size())
+                dummy.append(", ");
+            cnt++;
+        }
+
+        dummy.append(") { return ");
+        dummy.append(source).append(";}}");
+
+        System.out.println("[DynamicCompiler::eval] evaluating : " + dummy.toString());
+
         try {
-            Method m = dummyClass.getDeclaredMethod("eval");
-            return m.invoke(null);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            return (T) compile("Dummy", dummy.toString())
+                .getDeclaredMethod("eval", ctx.getParameters().values().toArray(new Class<?>[0]))
+                .invoke(null, params);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public Object eval(String source) throws CompilerException, InvocationTargetException {
+
+        return eval(source, new EvalContext<>(Object.class));
+    }
+
+    public void run(String source) throws CompilerException, InvocationTargetException {
+
+        StringBuilder dummy = new StringBuilder();
+        dummy.append("public class Dummy { public static void run() { ");
+        dummy.append(source).append("}}");
+
+        try {
+            compileAndRun("Dummy", "run", dummy.toString());
+        } catch (IllegalAccessException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Extremely unstable as we let the user write its own code. (ex: method could be private or not static)
+     *
+     * @param name
+     *     the name of the enclosing class
+     * @param methodName
+     *     the name of the method to run
+     * @param source
+     *     the source code
+     */
+    public void compileAndRun(String name, String methodName, String source) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, CompilerException {
+
+        compile(name, source).getDeclaredMethod(methodName).invoke(null);
     }
 }

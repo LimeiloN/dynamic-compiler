@@ -27,7 +27,7 @@ public class CompilerException extends Exception {
 
     public String getDiagnosticsError() {
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(getLocalizedMessage()).append(" : \n");
         if (diagnostics != null) {
             diagnostics.forEach(diagnostic -> sb.append(String.format("Error on line %d: %s\n",
                                                                       diagnostic.getLineNumber(),

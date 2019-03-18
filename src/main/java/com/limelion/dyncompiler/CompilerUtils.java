@@ -11,11 +11,9 @@ public final class CompilerUtils {
 
     public static String[] splitQName(String qname) {
 
-        String[] splitted;
+        String[] splitted = new String[2];
 
         if (qname.contains(".")) {
-
-            splitted = new String[2];
 
             String[] tmp = qname.split("\\.");
             StringBuilder sb = new StringBuilder();
@@ -28,7 +26,7 @@ public final class CompilerUtils {
             splitted[1] = tmp[tmp.length - 1];
 
         } else {
-            splitted = new String[] { qname };
+            splitted[1] = qname;
         }
 
         return splitted;
