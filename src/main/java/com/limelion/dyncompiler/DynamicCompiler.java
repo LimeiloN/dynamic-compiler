@@ -6,22 +6,29 @@ import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * Where everything happens.
+ */
 public class DynamicCompiler {
 
-    static Locale locale;
     private JavaCompiler compiler;
     private FileManager fileManager;
     private DiagnosticCollector<JavaFileObject> diagnostics;
     private DynamicClassLoader cl;
 
+    /**
+     * Instantiate a new DynamicCompiler, since it uses heavy tools like javac, it may be a good idea to reuse this
+     * object instead of creating another.
+     *
+     * @throws CompilerException
+     *     thrown we're unable to reach the system default compiler.
+     */
     public DynamicCompiler() throws CompilerException {
-
-        this(Locale.US);
-    }
-
-    public DynamicCompiler(Locale locale) throws CompilerException {
 
         this.compiler = ToolProvider.getSystemJavaCompiler();
 
@@ -32,16 +39,26 @@ public class DynamicCompiler {
 
         this.diagnostics = new DiagnosticCollector<>();
         this.cl = new DynamicClassLoader(getClass().getClassLoader());
-        this.fileManager = new FileManager(compiler.getStandardFileManager(diagnostics, locale, StandardCharsets.UTF_8), cl);
-        DynamicCompiler.locale = locale;
+        this.fileManager = new FileManager(compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8), cl);
     }
 
-    public synchronized Map<String, Class<?>> compile(Map<String, String> sources) throws CompilerException {
+    /**
+     * Compile the provided sources.
+     *
+     * @param sources
+     *     a map containing the qualified class names associated with their sources.
+     *
+     * @return a map containing the same qualified class names associated with the loaded classes in memory.
+     *
+     * @throws CompilerException
+     *     if an error is thrown during compilation.
+     */
+    public synchronized Map<String, Class<?>> compileAndLoad(Map<String, String> sources) throws CompilerException {
 
         List<SourceObject> sourceObjs = new ArrayList<>(sources.size());
 
         for (Map.Entry<String, String> e : sources.entrySet())
-            sourceObjs.add(new SourceObject(CompilerUtils.splitQName(e.getKey())[1], e.getValue()));
+            sourceObjs.add(new SourceObject(CompilerUtils.getName(e.getKey()), e.getValue()));
 
         for (String s : sources.keySet())
             cl.addClass(new CompiledObject(s));
@@ -55,9 +72,26 @@ public class DynamicCompiler {
         return cl.loadAll();
     }
 
-    public Class<?> compile(String qname, String source) throws CompilerException {
+    public Class<?> compileAndLoad(String qname, String source) throws CompilerException {
 
-        return compile(Collections.singletonMap(qname, source)).get(qname);
+        cl.addClass(new CompiledObject(qname));
+        JavaCompiler.CompilationTask ctask = compiler.getTask(null, fileManager, diagnostics, null, null, Collections.singletonList(new SourceObject(CompilerUtils.getName(qname), source)));
+
+        try {
+            return cl.loadClass(qname);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized Map<String, CompiledObject> compile(Map<String, String> sources) {
+
+        return null;
+    }
+
+    public CompiledObject compile(String qname, String source) {
+
+        return null;
     }
 
     public <T> T eval(String source, EvalContext<T> ctx, Object... params) throws CompilerException, InvocationTargetException {
@@ -68,24 +102,16 @@ public class DynamicCompiler {
             dummy.append("import ").append(c.getCanonicalName()).append(";");
         }
 
-        dummy.append("public class Dummy { public static ").append(ctx.getReturnType().getCanonicalName()).append(" eval(");
+        dummy.append("public class Dummy {\n public static ").append(ctx.getSignature().toString("eval"));
 
-        int cnt = 1;
-        for (Map.Entry e : ctx.getParameters().entrySet()) {
-            dummy.append(((Class<?>) e.getValue()).getCanonicalName()).append(" ").append(e.getKey());
-            if (cnt != ctx.getParameters().size())
-                dummy.append(", ");
-            cnt++;
-        }
-
-        dummy.append(") { return ");
+        dummy.append(" { return ");
         dummy.append(source).append(";}}");
 
         System.out.println("[DynamicCompiler::eval] evaluating : " + dummy.toString());
 
         try {
-            return (T) compile("Dummy", dummy.toString())
-                .getDeclaredMethod("eval", ctx.getParameters().values().toArray(new Class<?>[0]))
+            return (T) compileAndLoad("Dummy", dummy.toString())
+                .getDeclaredMethod("eval", ctx.getSignature().getParameters().values().toArray(new Class<?>[0]))
                 .invoke(null, params);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             e.printStackTrace();
@@ -95,7 +121,7 @@ public class DynamicCompiler {
 
     public Object eval(String source) throws CompilerException, InvocationTargetException {
 
-        return eval(source, new EvalContext<>(Object.class));
+        return eval(source, new EvalContext<>(new MethodSignature<>(Object.class)));
     }
 
     public void run(String source) throws CompilerException, InvocationTargetException {
@@ -123,6 +149,11 @@ public class DynamicCompiler {
      */
     public void compileAndRun(String name, String methodName, String source) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, CompilerException {
 
-        compile(name, source).getDeclaredMethod(methodName).invoke(null);
+        compileAndLoad(name, source).getDeclaredMethod(methodName).invoke(null);
+    }
+
+    public DynamicClassLoader getClassLoader() {
+
+        return cl;
     }
 }

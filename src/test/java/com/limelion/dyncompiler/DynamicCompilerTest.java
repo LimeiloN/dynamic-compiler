@@ -24,7 +24,7 @@ public class DynamicCompilerTest {
         try {
 
             DynamicCompiler compiler = new DynamicCompiler();
-            Map<String, Class<?>> compiled = compiler.compile(Collections.singletonMap("somepackage.SomeClass", someCode));
+            Map<String, Class<?>> compiled = compiler.compileAndLoad(Collections.singletonMap("somepackage.SomeClass", someCode));
             Class<?> someClass = compiled.get("somepackage.SomeClass");
 
             Method m = someClass.getDeclaredMethod("run");
@@ -60,7 +60,7 @@ public class DynamicCompilerTest {
         try {
 
             DynamicCompiler compiler = new DynamicCompiler();
-            Map<String, Class<?>> compiled = compiler.compile(sources);
+            Map<String, Class<?>> compiled = compiler.compileAndLoad(sources);
             Class<?> someClass = compiled.get("somepackage.SomeClass");
 
             Method m = someClass.getDeclaredMethod("run");
@@ -86,7 +86,7 @@ public class DynamicCompilerTest {
         try {
             DynamicCompiler compiler = new DynamicCompiler();
 
-            Assertions.assertThrows(CompilerException.class, () -> compiler.compile(Collections.singletonMap("somepackage.SomeClass", someCode)));
+            Assertions.assertThrows(CompilerException.class, () -> compiler.compileAndLoad(Collections.singletonMap("somepackage.SomeClass", someCode)));
 
         } catch (CompilerException e) {
             Assertions.fail(e);
@@ -116,7 +116,7 @@ public class DynamicCompilerTest {
             DynamicCompiler compiler = new DynamicCompiler();
 
             Assertions.assertEquals((double) (3 * 2 + 2),
-                                    compiler.eval(source, new EvalContext<>(Double.class)
+                                    compiler.eval(source, new MethodSignature<>(Double.class)
                                         .addParameter("x", Double.class)
                                         .addParameter("b", Double.class), 2.0, 2.0));
         } catch (CompilerException | InvocationTargetException e) {
@@ -163,7 +163,7 @@ public class DynamicCompilerTest {
     @Test
     public void testMultipleEval() {
 
-        String source = "\"Why the fuck I would do this ?\"";
+        String source = "\"Why the fuck would I even do this ?\"";
 
         try {
             DynamicCompiler compiler = new DynamicCompiler();

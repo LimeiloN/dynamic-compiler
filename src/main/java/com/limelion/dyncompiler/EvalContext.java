@@ -1,40 +1,22 @@
 package com.limelion.dyncompiler;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class EvalContext<T> {
 
     private List<Class<?>> imports;
-    private Class<T> returnType;
-    private Map<String, Class<?>> parameters;
-    private List<Class<? extends Throwable>> throwables;
+    private MethodSignature<T> signature;
 
-    public EvalContext(Class<T> returnType) {
+    public EvalContext(MethodSignature<T> signature) {
 
-        this.returnType = returnType;
+        this.signature = signature;
         this.imports = new ArrayList<>();
-        this.parameters = new HashMap<>();
-        this.throwables = new ArrayList<>();
     }
 
-    public EvalContext addImport(Class<?> clazz) {
+    public EvalContext<T> addImport(Class<?> toImport) {
 
-        imports.add(clazz);
-        return this;
-    }
-
-    public EvalContext addParameter(String name, Class<?> clazz) {
-
-        parameters.put(name, clazz);
-        return this;
-    }
-
-    public EvalContext addThrow(Class<? extends Throwable> clazz) {
-
-        throwables.add(clazz);
+        this.imports.add(toImport);
         return this;
     }
 
@@ -43,25 +25,8 @@ public class EvalContext<T> {
         return imports;
     }
 
-    public Map<String, Class<?>> getParameters() {
+    public MethodSignature<T> getSignature() {
 
-        return parameters;
+        return signature;
     }
-
-    public List<Class<? extends Throwable>> getThrowables() {
-
-        return throwables;
-    }
-
-    public Class<T> getReturnType() {
-
-        return returnType;
-    }
-
-    public EvalContext setReturnType(Class<T> returnType) {
-
-        this.returnType = returnType;
-        return this;
-    }
-
 }

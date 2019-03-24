@@ -31,7 +31,7 @@ public class CompilerException extends Exception {
         if (diagnostics != null) {
             diagnostics.forEach(diagnostic -> sb.append(String.format("Error on line %d: %s\n",
                                                                       diagnostic.getLineNumber(),
-                                                                      diagnostic.getMessage(DynamicCompiler.locale))));
+                                                                      diagnostic.getMessage(null))));
         }
         return sb.toString();
     }
