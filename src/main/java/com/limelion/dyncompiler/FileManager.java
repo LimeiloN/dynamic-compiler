@@ -35,7 +35,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager> {
     @Override
     public JavaFileObject getJavaFileForOutput(Location location, String qname, JavaFileObject.Kind kind, FileObject outputFile) throws IOException {
 
-        System.out.println("[FileManager::getFileForOutput] " + location + "; " + qname + "; " + kind + "; " + outputFile);
+        //System.out.println("[FileManager::getFileForOutput] " + location + "; " + qname + "; " + kind + "; " + outputFile);
         if (kind == JavaFileObject.Kind.CLASS)
             return classLoader.getObject(qname);
         else

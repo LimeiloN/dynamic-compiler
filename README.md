@@ -10,6 +10,9 @@ So now you can compile code that compile code [https://www.youtube.com/watch?v=9
 or create your own (shitty) jshell. A more cool use case would be to parse 
 math expressions (rly it's nice).
 
+But wait, there's more ! It can also behave as a standard compiler, compiling files.
+Less interesting ...
+
 #### Flawless
 This whole project is a security flaw. If you make the user enter code to 
 be run, PLS make sure to sanitize the input or expect a Java Injection.

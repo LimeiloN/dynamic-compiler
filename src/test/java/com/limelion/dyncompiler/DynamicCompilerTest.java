@@ -116,9 +116,9 @@ public class DynamicCompilerTest {
             DynamicCompiler compiler = new DynamicCompiler();
 
             Assertions.assertEquals((double) (3 * 2 + 2),
-                                    compiler.eval(source, new MethodSignature<>(Double.class)
-                                        .addParameter("x", Double.class)
-                                        .addParameter("b", Double.class), 2.0, 2.0));
+                                    compiler.eval(source, new EvalContext<>(new MethodSignature<>(Double.class)
+                                                                                .addParameter("x", Double.class)
+                                                                                .addParameter("b", Double.class)), 2.0, 2.0));
         } catch (CompilerException | InvocationTargetException e) {
             Assertions.fail(e);
         }

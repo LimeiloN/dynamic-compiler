@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Where everything happens.
+ * Where everything happens. Compile, load and run code.
  */
 public class DynamicCompiler {
 
@@ -43,7 +43,7 @@ public class DynamicCompiler {
     }
 
     /**
-     * Compile the provided sources.
+     * Compile the provided sources and load them into classpath.
      *
      * @param sources
      *     a map containing the qualified class names associated with their sources.
@@ -53,7 +53,50 @@ public class DynamicCompiler {
      * @throws CompilerException
      *     if an error is thrown during compilation.
      */
-    public synchronized Map<String, Class<?>> compileAndLoad(Map<String, String> sources) throws CompilerException {
+    public Map<String, Class<?>> compileAndLoad(Map<String, String> sources) throws CompilerException {
+
+        compile(sources);
+        return cl.loadAll();
+    }
+
+    /**
+     * Compile and load the specified class source.
+     *
+     * @param qname
+     *     the qualified name of the class to compile
+     * @param source
+     *     the source code
+     *
+     * @return the loaded Class
+     *
+     * @throws CompilerException
+     *     if there was an exception compiling the source
+     */
+    public Class<?> compileAndLoad(String qname, String source) throws CompilerException {
+
+        compile(qname, source);
+
+        try {
+            return cl.loadClass(qname);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /**
+     * Compile the specified sources.
+     *
+     * @param sources
+     *     a Map containing the classes and their qualified name.
+     *
+     * @return a Map containing the compiled classes and their name.
+     *
+     * @throws CompilerException
+     *     if an error is thrown during compilation
+     */
+    public synchronized Map<String, CompiledObject> compile(Map<String, String> sources) throws CompilerException {
 
         List<SourceObject> sourceObjs = new ArrayList<>(sources.size());
 
@@ -68,30 +111,31 @@ public class DynamicCompiler {
         if (!ctask.call()) {
             throw new CompilerException("Compilation failed !", diagnostics.getDiagnostics());
         }
-
-        return cl.loadAll();
+        return cl.getObjects();
     }
 
-    public Class<?> compileAndLoad(String qname, String source) throws CompilerException {
+    /**
+     * Compile the specified class.
+     *
+     * @param qname
+     *     the class name
+     * @param source
+     *     the class source
+     *
+     * @return the compiled class
+     *
+     * @throws CompilerException
+     */
+    public synchronized CompiledObject compile(String qname, String source) throws CompilerException {
 
         cl.addClass(new CompiledObject(qname));
         JavaCompiler.CompilationTask ctask = compiler.getTask(null, fileManager, diagnostics, null, null, Collections.singletonList(new SourceObject(CompilerUtils.getName(qname), source)));
 
-        try {
-            return cl.loadClass(qname);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        if (!ctask.call()) {
+            throw new CompilerException("Compilation failed !", diagnostics.getDiagnostics());
         }
-    }
 
-    public synchronized Map<String, CompiledObject> compile(Map<String, String> sources) {
-
-        return null;
-    }
-
-    public CompiledObject compile(String qname, String source) {
-
-        return null;
+        return cl.getObject(qname);
     }
 
     public <T> T eval(String source, EvalContext<T> ctx, Object... params) throws CompilerException, InvocationTargetException {
@@ -107,7 +151,7 @@ public class DynamicCompiler {
         dummy.append(" { return ");
         dummy.append(source).append(";}}");
 
-        System.out.println("[DynamicCompiler::eval] evaluating : " + dummy.toString());
+        //System.out.println("[DynamicCompiler::eval] evaluating : " + dummy.toString());
 
         try {
             return (T) compileAndLoad("Dummy", dummy.toString())
@@ -150,10 +194,5 @@ public class DynamicCompiler {
     public void compileAndRun(String name, String methodName, String source) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, CompilerException {
 
         compileAndLoad(name, source).getDeclaredMethod(methodName).invoke(null);
-    }
-
-    public DynamicClassLoader getClassLoader() {
-
-        return cl;
     }
 }

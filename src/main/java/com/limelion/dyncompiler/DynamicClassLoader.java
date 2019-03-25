@@ -47,7 +47,7 @@ public class DynamicClassLoader extends ClassLoader {
     @Override
     public Class<?> findClass(String qname) throws ClassNotFoundException {
 
-        System.out.println("[DynamicClassLoader::findClass] " + qname);
+        //System.out.println("[DynamicClassLoader::findClass] " + qname);
         CompiledObject compiled = compiledObjs.get(qname);
 
         if (compiled == null) {
