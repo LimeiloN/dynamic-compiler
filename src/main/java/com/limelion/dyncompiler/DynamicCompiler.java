@@ -25,8 +25,7 @@ public class DynamicCompiler {
      * Instantiate a new DynamicCompiler, since it uses heavy tools like javac, it may be a good idea to reuse this
      * object instead of creating another.
      *
-     * @throws CompilerException
-     *     thrown we're unable to reach the system default compiler.
+     * @throws CompilerException thrown we're unable to reach the system default compiler.
      */
     public DynamicCompiler() throws CompilerException {
 
@@ -45,13 +44,11 @@ public class DynamicCompiler {
     /**
      * Compile the provided sources and load them into classpath.
      *
-     * @param sources
-     *     a map containing the qualified class names associated with their sources.
+     * @param sources a map containing the qualified class names associated with their sources.
      *
      * @return a map containing the same qualified class names associated with the loaded classes in memory.
      *
-     * @throws CompilerException
-     *     if an error is thrown during compilation.
+     * @throws CompilerException if an error is thrown during compilation.
      */
     public Map<String, Class<?>> compileAndLoad(Map<String, String> sources) throws CompilerException {
 
@@ -62,15 +59,12 @@ public class DynamicCompiler {
     /**
      * Compile and load the specified class source.
      *
-     * @param qname
-     *     the qualified name of the class to compile
-     * @param source
-     *     the source code
+     * @param qname  the qualified name of the class to compile
+     * @param source the source code
      *
      * @return the loaded Class
      *
-     * @throws CompilerException
-     *     if there was an exception compiling the source
+     * @throws CompilerException if there was an exception compiling the source
      */
     public Class<?> compileAndLoad(String qname, String source) throws CompilerException {
 
@@ -88,13 +82,11 @@ public class DynamicCompiler {
     /**
      * Compile the specified sources.
      *
-     * @param sources
-     *     a Map containing the classes and their qualified name.
+     * @param sources a Map containing the classes and their qualified name.
      *
      * @return a Map containing the compiled classes and their name.
      *
-     * @throws CompilerException
-     *     if an error is thrown during compilation
+     * @throws CompilerException if an error is thrown during compilation
      */
     public synchronized Map<String, CompiledObject> compile(Map<String, String> sources) throws CompilerException {
 
@@ -117,10 +109,8 @@ public class DynamicCompiler {
     /**
      * Compile the specified class.
      *
-     * @param qname
-     *     the class name
-     * @param source
-     *     the class source
+     * @param qname  the class name
+     * @param source the class source
      *
      * @return the compiled class
      *
@@ -184,12 +174,9 @@ public class DynamicCompiler {
     /**
      * Extremely unstable as we let the user write its own code. (ex: method could be private or not static)
      *
-     * @param name
-     *     the name of the enclosing class
-     * @param methodName
-     *     the name of the method to run
-     * @param source
-     *     the source code
+     * @param name       the name of the enclosing class
+     * @param methodName the name of the method to run
+     * @param source     the source code
      */
     public void compileAndRun(String name, String methodName, String source) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, CompilerException {
 
