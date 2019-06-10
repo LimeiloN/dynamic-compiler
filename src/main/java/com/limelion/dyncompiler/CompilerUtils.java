@@ -1,20 +1,26 @@
 package com.limelion.dyncompiler;
 
+import com.squareup.javapoet.ClassName;
+
+import javax.tools.JavaFileObject;
 import java.net.URI;
-import java.util.Map.Entry;
 
 public final class CompilerUtils {
 
-    public static URI getSource(String name) {
+    public static URI getSourceURI(String qname) {
 
-        return URI.create("string:///" + name + ".java");
+        return URI.create("string:///" + qname.replace(".", "/") + JavaFileObject.Kind.SOURCE.extension);
+    }
+
+    public static URI getSourceURI(ClassName className) {
+
+        return getSourceURI(getCanonicalName(className));
     }
 
     /**
-     * Split a class qualified name into 2 bits. "org.example.Class" -> {"org.example", "Class"}
+     * Split a class qualified className into 2 bits. "org.example.Class" -> {"org.example", "Class"}
      *
-     * @param qname
-     *     the qualified name to split
+     * @param qname the qualified className to split
      *
      * @return an array containing the 2 bits
      */
@@ -44,13 +50,20 @@ public final class CompilerUtils {
         return splitted;
     }
 
-    public static String getPackage(String qname) {
+    public static String getPackage(String cname) {
 
-        return splitQName(qname)[0];
+        return splitQName(cname)[0];
     }
 
-    public static String getName(String qname) {
+    public static String getSimpleClassName(String cname) {
 
-        return splitQName(qname)[1];
+        return splitQName(cname)[1];
+    }
+
+    public static String getCanonicalName(ClassName className) {
+
+        return className.enclosingClassName() != null
+            ? (getCanonicalName(className.enclosingClassName()) + '.' + className.simpleName())
+            : (className.packageName().isEmpty() ? className.simpleName() : className.packageName() + '.' + className.simpleName());
     }
 }

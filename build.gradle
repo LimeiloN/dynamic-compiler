@@ -3,11 +3,12 @@ plugins {
     id 'maven'
 }
 
+ext.moduleName = "com.limelion.dyncompiler"
 group 'com.limelion'
-version '1.0.0'
+version '2.0.0'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 repositories {
     mavenLocal()
@@ -15,6 +16,7 @@ repositories {
 }
 
 dependencies {
+    api "com.squareup:javapoet:1.11.1"
     testImplementation "org.junit.jupiter:junit-jupiter-api:5.3.1"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.3.1"
 }
@@ -28,11 +30,47 @@ tasks.withType(JavaCompile) {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = "sources"
+    archiveClassifier.set("sources")
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = "javadoc"
+    archiveClassifier.set("javadoc")
     from javadoc.destinationDir
+}
+
+compileJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+        ]
+        classpath = files()
+    }
+}
+
+compileTestJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+                '--add-modules', 'org.junit.jupiter.api',
+                '--add-reads', "$moduleName=org.junit.jupiter.api",
+                '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
+        ]
+        classpath = files()
+    }
+}
+
+test {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        jvmArgs = [
+                '--module-path', classpath.asPath,
+                '--add-modules', 'ALL-MODULE-PATH',
+                '--add-reads', "$moduleName=org.junit.jupiter.api",
+                '--patch-module', "$moduleName=" + files(sourceSets.test.java.outputDir).asPath,
+        ]
+        classpath = files()
+    }
 }

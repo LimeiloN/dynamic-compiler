@@ -1,17 +1,21 @@
 package com.limelion.dyncompiler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EvalContext<T> {
 
     private List<Class<?>> imports;
-    private MethodSignature<T> signature;
+    private Map<String, Object> variables;
+    private Class<T> evalType;
 
-    public EvalContext(MethodSignature<T> signature) {
+    public EvalContext(Class<T> evalType) {
 
-        this.signature = signature;
         this.imports = new ArrayList<>();
+        this.variables = new HashMap<>();
+        this.evalType = evalType;
     }
 
     public EvalContext<T> addImport(Class<?> toImport) {
@@ -25,8 +29,13 @@ public class EvalContext<T> {
         return imports;
     }
 
-    public MethodSignature<T> getSignature() {
+    public Map<String, Object> getVariables() {
 
-        return signature;
+        return variables;
+    }
+
+    public Class<T> getEvalType() {
+
+        return evalType;
     }
 }

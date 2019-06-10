@@ -14,8 +14,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager> {
     /**
      * Creates a new instance of ForwardingJavaFileManager.
      *
-     * @param fileManager
-     *     delegate to this file manager
+     * @param fileManager delegate to this file manager
      */
     public FileManager(JavaFileManager fileManager, DynamicClassLoader cloader) {
 
@@ -35,7 +34,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager> {
     @Override
     public JavaFileObject getJavaFileForOutput(Location location, String qname, JavaFileObject.Kind kind, FileObject outputFile) throws IOException {
 
-        //System.out.println("[FileManager::getFileForOutput] " + location + "; " + qname + "; " + kind + "; " + outputFile);
+        //System.out.println("[FileManager::getFileForOutput] " + location + "; " + className + "; " + kind + "; " + outputFile);
         if (kind == JavaFileObject.Kind.CLASS)
             return classLoader.getObject(qname);
         else

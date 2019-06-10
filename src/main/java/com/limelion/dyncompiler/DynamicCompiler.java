@@ -1,5 +1,11 @@
 package com.limelion.dyncompiler;
 
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
+
+import javax.lang.model.element.Modifier;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -12,7 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Where everything happens. Compile, load and run code.
+ * The main class of the library. Use it to compile, run or eval code at runtime.
+ *
+ * <b>Note :</b> The constructor will throw an error if the current platform doesn't provide a compiler.
  */
 public class DynamicCompiler {
 
@@ -22,12 +30,12 @@ public class DynamicCompiler {
     private DynamicClassLoader cl;
 
     /**
-     * Instantiate a new DynamicCompiler, since it uses heavy tools like javac, it may be a good idea to reuse this
-     * object instead of creating another.
+     * Instantiate a new DynamicCompiler.
      *
      * @throws CompilerException thrown we're unable to reach the system default compiler.
      */
     public DynamicCompiler() throws CompilerException {
+
 
         this.compiler = ToolProvider.getSystemJavaCompiler();
 
@@ -50,28 +58,27 @@ public class DynamicCompiler {
      *
      * @throws CompilerException if an error is thrown during compilation.
      */
-    public Map<String, Class<?>> compileAndLoad(Map<String, String> sources) throws CompilerException {
+    public Map<String, Class<?>> compileAndLoad(Map<ClassName, String> sources) throws CompilerException {
 
-        compile(sources);
-        return cl.loadAll();
+        return cl.loadAll(compile(sources).keySet());
     }
 
     /**
      * Compile and load the specified class source.
      *
-     * @param qname  the qualified name of the class to compile
+     * @param cname  the qualified className of the class to compile
      * @param source the source code
      *
      * @return the loaded Class
      *
      * @throws CompilerException if there was an exception compiling the source
      */
-    public Class<?> compileAndLoad(String qname, String source) throws CompilerException {
+    public Class<?> compileAndLoad(ClassName cname, String source) throws CompilerException {
 
-        compile(qname, source);
+        compile(cname, source);
 
         try {
-            return cl.loadClass(qname);
+            return cl.loadClass(CompilerUtils.getCanonicalName(cname));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -82,21 +89,21 @@ public class DynamicCompiler {
     /**
      * Compile the specified sources.
      *
-     * @param sources a Map containing the classes and their qualified name.
+     * @param sources a Map containing the classes and their qualified className.
      *
-     * @return a Map containing the compiled classes and their name.
+     * @return a Map containing the compiled classes and their className.
      *
      * @throws CompilerException if an error is thrown during compilation
      */
-    public synchronized Map<String, CompiledObject> compile(Map<String, String> sources) throws CompilerException {
+    public synchronized Map<String, CompiledObject> compile(Map<ClassName, String> sources) throws CompilerException {
 
         List<SourceObject> sourceObjs = new ArrayList<>(sources.size());
 
-        for (Map.Entry<String, String> e : sources.entrySet())
-            sourceObjs.add(new SourceObject(CompilerUtils.getName(e.getKey()), e.getValue()));
+        for (Map.Entry<ClassName, String> e : sources.entrySet())
+            sourceObjs.add(new SourceObject(e.getKey(), e.getValue()));
 
-        for (String s : sources.keySet())
-            cl.addClass(new CompiledObject(s));
+        for (ClassName cname : sources.keySet())
+            cl.addClass(new CompiledObject(cname));
 
         JavaCompiler.CompilationTask ctask = compiler.getTask(null, fileManager, diagnostics, null, null, sourceObjs);
 
@@ -109,77 +116,91 @@ public class DynamicCompiler {
     /**
      * Compile the specified class.
      *
-     * @param qname  the class name
+     * @param name   the qualified (or canonical) class name
      * @param source the class source
      *
      * @return the compiled class
      *
      * @throws CompilerException
      */
-    public synchronized CompiledObject compile(String qname, String source) throws CompilerException {
+    public CompiledObject compile(ClassName name, String source) throws CompilerException {
 
-        cl.addClass(new CompiledObject(qname));
-        JavaCompiler.CompilationTask ctask = compiler.getTask(null, fileManager, diagnostics, null, null, Collections.singletonList(new SourceObject(CompilerUtils.getName(qname), source)));
+        return compile(name, new SourceObject(name, source));
+    }
+
+    /**
+     * Compiles a JavaFileObject to a compiled object
+     *
+     * @param name
+     * @param source
+     *
+     * @return
+     *
+     * @throws CompilerException
+     */
+    public synchronized CompiledObject compile(ClassName name, JavaFileObject source) throws CompilerException {
+
+        cl.addClass(new CompiledObject(name));
+        JavaCompiler.CompilationTask ctask = compiler.getTask(null, fileManager, diagnostics, null, null, Collections.singletonList(source));
 
         if (!ctask.call()) {
             throw new CompilerException("Compilation failed !", diagnostics.getDiagnostics());
         }
 
-        return cl.getObject(qname);
+        return cl.getObject(CompilerUtils.getCanonicalName(name));
     }
 
-    public <T> T eval(String source, EvalContext<T> ctx, Object... params) throws CompilerException, InvocationTargetException {
+    public <T> T eval(String source, EvalContext<T> ctx) throws CompilerException, InvocationTargetException {
 
-        StringBuilder dummy = new StringBuilder();
+        MethodSpec eval = MethodSpec.methodBuilder("eval")
+                                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC)
+                                    .addCode(source)
+                                    .returns(ctx.getEvalType())
+                                    .build();
 
-        for (Class<?> c : ctx.getImports()) {
-            dummy.append("import ").append(c.getCanonicalName()).append(";");
-        }
+        TypeSpec dummy = TypeSpec.classBuilder("Dummy")
+                                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                                 .addMethod(eval)
+                                 .build();
 
-        dummy.append("public class Dummy {\n public static ").append(ctx.getSignature().toString("eval"));
-
-        dummy.append(" { return ");
-        dummy.append(source).append(";}}");
+        JavaFile clazz = JavaFile.builder("", dummy)
+                                 .build();
 
         //System.out.println("[DynamicCompiler::eval] evaluating : " + dummy.toString());
 
         try {
-            return (T) compileAndLoad("Dummy", dummy.toString())
-                .getDeclaredMethod("eval", ctx.getSignature().getParameters().values().toArray(new Class<?>[0]))
-                .invoke(null, params);
+            return (T) compileAndLoad(ClassName.bestGuess("Dummy"), clazz.toString())
+                .getDeclaredMethod("eval")
+                .invoke(null);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public Object eval(String source) throws CompilerException, InvocationTargetException {
+    public <T> T eval(String source, Class<T> expectedType) throws CompilerException, InvocationTargetException {
 
-        return eval(source, new EvalContext<>(new MethodSignature<>(Object.class)));
+        return eval(source, new EvalContext<>(expectedType));
     }
 
     public void run(String source) throws CompilerException, InvocationTargetException {
 
-        StringBuilder dummy = new StringBuilder();
-        dummy.append("public class Dummy { public static void run() { ");
-        dummy.append(source).append("}}");
+        MethodSpec run = MethodSpec.methodBuilder("run")
+                                   .addModifiers(Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC)
+                                   .addCode(source)
+                                   .build();
+
+        TypeSpec dummy = TypeSpec.classBuilder("Dummy")
+                                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                                 .addMethod(run)
+                                 .build();
+
+        JavaFile clazz = JavaFile.builder("", dummy).build();
 
         try {
-            compileAndRun("Dummy", "run", dummy.toString());
+            compileAndLoad(ClassName.bestGuess("Dummy"), clazz.toString()).getDeclaredMethod("run").invoke(null);
         } catch (IllegalAccessException | NoSuchMethodException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * Extremely unstable as we let the user write its own code. (ex: method could be private or not static)
-     *
-     * @param name       the name of the enclosing class
-     * @param methodName the name of the method to run
-     * @param source     the source code
-     */
-    public void compileAndRun(String name, String methodName, String source) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, CompilerException {
-
-        compileAndLoad(name, source).getDeclaredMethod(methodName).invoke(null);
     }
 }

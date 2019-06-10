@@ -1,10 +1,12 @@
 package com.limelion.dyncompiler;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DynamicClassLoader extends ClassLoader {
 
+    // Objects are indexed on their qualified (or canonical) name
     private Map<String, CompiledObject> compiledObjs;
 
     public DynamicClassLoader(ClassLoader classLoader) {
@@ -13,9 +15,9 @@ public class DynamicClassLoader extends ClassLoader {
         this.compiledObjs = new HashMap<>();
     }
 
-    public void addClass(CompiledObject cdata) {
+    public void addClass(CompiledObject co) {
 
-        this.compiledObjs.put(cdata.name, cdata);
+        this.compiledObjs.put(co.getCanonicalName(), co);
     }
 
     public CompiledObject getObject(String qname) {
@@ -28,14 +30,18 @@ public class DynamicClassLoader extends ClassLoader {
         return new HashMap<>(compiledObjs);
     }
 
-    public Map<String, Class<?>> loadAll() {
+    public Map<String, Class<?>> loadAll(Collection<String> names) {
 
         Map<String, Class<?>> classes = new HashMap<>(compiledObjs.size());
+        CompiledObject co;
 
         try {
-            for (CompiledObject co : getObjects().values()) {
+            for (String name : names) {
 
-                classes.put(co.name, loadClass(co.name));
+                if (compiledObjs.containsKey(name)) {
+                    co = compiledObjs.get(name);
+                    classes.put(co.getCanonicalName(), loadClass(co.getCanonicalName()));
+                }
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -47,7 +53,7 @@ public class DynamicClassLoader extends ClassLoader {
     @Override
     public Class<?> findClass(String qname) throws ClassNotFoundException {
 
-        //System.out.println("[DynamicClassLoader::findClass] " + qname);
+        System.out.println("[DynamicClassLoader::findClass] " + qname);
         CompiledObject compiled = compiledObjs.get(qname);
 
         if (compiled == null) {
