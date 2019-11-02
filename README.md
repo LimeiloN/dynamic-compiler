@@ -1,4 +1,4 @@
-### dynamic-compiler
+### dyncompiler
 A java library that is able of compiling code at runtime.
 
 #### What can it do
@@ -26,13 +26,13 @@ try {
 }
 ````
 
-#### Security
+#### Security Note
 Letting the user enter code is always a bad idea.
 
 #### Get it
 Available on JitPack :
 ````groovy
-implementation "com.github.LimeiloN:dynamic-compiler:2.0.0"
+implementation "com.github.LimeiloN:dyncompiler:2.0.0"
 ````
 
 #### Credits

@@ -1,7 +1,12 @@
-module com.limelion.dyncompiler {
+module com.github.LimeiloN.dyncompiler {
 
     requires java.compiler;
     requires com.squareup.javapoet;
+    requires janino;
+    requires commons.compiler;
+    requires ecj;
 
-    exports com.limelion.dyncompiler;
+    requires org.apache.logging.log4j;
+
+    exports com.github.LimeiloN.dyncompiler;
 }
