@@ -1,0 +1,39 @@
+plugins {
+    id 'java-library'
+    id "maven-publish"
+    id "com.dua3.gradle.jpms"
+}
+
+group 'com.github.LimeiloN'
+version '2.0.0'
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.apache.logging.log4j:log4j-api:2.12.1'
+    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.12.1'
+
+    //TRANSITIVE
+    api "com.squareup:javapoet:1.11.1"
+
+    // TESTS
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.5.2"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.5.2"
+}
+
+jigsaw {
+    testLibraryModule = 'org.junit.jupiter.api'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}

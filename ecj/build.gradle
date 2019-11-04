@@ -1,16 +1,20 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
 }
 
 group 'com.github.LimeiloN'
 version '2.0.0'
 
 sourceCompatibility = 11
+targetCompatibility = 11
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    api project(":core")
+
     implementation files("libs/ecj-4.13.jar")
 }
