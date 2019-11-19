@@ -30,8 +30,8 @@ package com.github.LimeiloN.dyncompiler.listeners;
  *
  * @author tcurdt
  */
+@FunctionalInterface
 public interface ReloadNotificationListener {
 
     void handleNotification();
-
 }

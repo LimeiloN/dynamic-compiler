@@ -25,19 +25,13 @@
 
 package com.github.LimeiloN.dyncompiler.listeners;
 
-import org.apache.commons.jci.compilers.CompilationResult;
-import org.apache.commons.jci.compilers.JavaCompiler;
-import org.apache.commons.jci.compilers.JavaCompilerFactory;
-import org.apache.commons.jci.monitor.FilesystemAlterationObserver;
-import org.apache.commons.jci.problems.CompilationProblem;
-import org.apache.commons.jci.readers.FileResourceReader;
-import org.apache.commons.jci.readers.ResourceReader;
-import org.apache.commons.jci.stores.MemoryResourceStore;
-import org.apache.commons.jci.stores.ResourceStore;
-import org.apache.commons.jci.stores.TransactionalResourceStore;
-import org.apache.commons.jci.utils.ConversionUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import com.github.LimeiloN.dyncompiler.compilers.CompilationResult;
+import com.github.LimeiloN.dyncompiler.compilers.JavaCompiler;
+import com.github.LimeiloN.dyncompiler.readers.ResourceReader;
+import com.github.LimeiloN.dyncompiler.stores.MemoryResourceStore;
+import com.github.LimeiloN.dyncompiler.stores.TransactionalResourceStore;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -51,7 +45,7 @@ import java.util.Collection;
  */
 public class CompilingListener extends ReloadingListener {
 
-    private final Log log = LogFactory.getLog(CompilingListener.class);
+    private final Logger log = LogManager.getLogger(CompilingListener.class);
 
     private final JavaCompiler compiler;
     private final TransactionalResourceStore transactionalStore;
@@ -66,10 +60,10 @@ public class CompilingListener extends ReloadingListener {
         this(pCompiler, new TransactionalResourceStore(new MemoryResourceStore()));
     }
 
-    public CompilingListener(final JavaCompiler pCompiler, final TransactionalResourceStore pTransactionalStore) {
-        super(pTransactionalStore);
-        compiler = pCompiler;
-        transactionalStore = pTransactionalStore;
+    public CompilingListener(final JavaCompiler compiler, final TransactionalResourceStore transactionalStore) {
+        super(transactionalStore);
+        compiler = compiler;
+        transactionalStore = transactionalStore;
         lastResult = null;
     }
 

@@ -43,11 +43,11 @@ public final class CompilationResult {
     private final CompilationProblem[] errors;
     private final CompilationProblem[] warnings;
 
-    public CompilationResult(final CompilationProblem[] pProblems) {
-        final Collection<CompilationProblem> errorsColl = new ArrayList<CompilationProblem>();
-        final Collection<CompilationProblem> warningsColl = new ArrayList<CompilationProblem>();
+    public CompilationResult(final CompilationProblem[] problems) {
+        final Collection<CompilationProblem> errorsColl = new ArrayList<>();
+        final Collection<CompilationProblem> warningsColl = new ArrayList<>();
 
-        for (CompilationProblem problem : pProblems) {
+        for (CompilationProblem problem : problems) {
             if (problem.isError()) {
                 errorsColl.add(problem);
             } else {

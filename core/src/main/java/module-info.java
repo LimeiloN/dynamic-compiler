@@ -6,6 +6,8 @@ module com.github.LimeiloN.dyncompiler {
 
     exports com.github.LimeiloN.dyncompiler;
 
-    opens com.github.LimeiloN.dyncompiler.internal to com.github.LimeiloN.dyncompiler.ecj;
-    opens com.github.LimeiloN.dyncompiler.internal to com.github.LimeiloN.dyncompiler.janino;
+    opens com.github.LimeiloN.dyncompiler.internal to
+            com.github.LimeiloN.dyncompiler.ecj,
+            com.github.LimeiloN.dyncompiler.janino;
+    exports com.github.LimeiloN.dyncompiler.internal;
 }

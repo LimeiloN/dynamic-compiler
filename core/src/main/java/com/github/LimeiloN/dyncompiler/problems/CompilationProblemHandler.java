@@ -25,7 +25,6 @@
 
 package com.github.LimeiloN.dyncompiler.problems;
 
-
 /**
  * A CompilationProblemHandler gets access to a problem
  * as soon as the problem is available while the
@@ -40,8 +39,8 @@ package com.github.LimeiloN.dyncompiler.problems;
  *
  * @author tcurdt
  */
+@FunctionalInterface
 public interface CompilationProblemHandler {
 
-    boolean handle(final CompilationProblem pProblem);
-
+    boolean handle(final CompilationProblem problem);
 }

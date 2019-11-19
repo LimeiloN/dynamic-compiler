@@ -29,7 +29,6 @@ import com.github.LimeiloN.dyncompiler.problems.CompilationProblemHandler;
 import com.github.LimeiloN.dyncompiler.readers.ResourceReader;
 import com.github.LimeiloN.dyncompiler.stores.ResourceStore;
 
-
 /**
  * Base class for compiler implementations. Provides just a few
  * convenience methods.

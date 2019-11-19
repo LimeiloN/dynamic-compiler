@@ -25,7 +25,6 @@
 
 package com.github.LimeiloN.dyncompiler.compilers;
 
-
 /**
  * Most common denominator for JavaCompiler settings.
  * <p>
